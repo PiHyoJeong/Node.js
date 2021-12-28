@@ -12,7 +12,7 @@ const userSchema = mongoose.Schema({ //mongoose를 이용하여 schema 생성
     },
     password: {
         type: String,
-        minlength: 50
+        minlength: 5
     },
     role: {
         type: Number,
