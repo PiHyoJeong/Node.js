@@ -5,9 +5,12 @@ const port = 8080
 const { User } = require("./models/User")
 //body-parser 가져오기
 const bodyParser = require('body-parser')
+//cookieparser 가져오기
+const cookieParser = require('cookie-parser');
 //body-parser 옵션주기 (Server에서 정보를 분석하여 가져올 수 있도록)
 app.use(bodyParser.urlencoded({extended: true})); //application/x-www-form-urlencoded
 app.use(bodyParser.json()); //application/json
+app.use(cookieParser()); //cookieparser 사용할 수 있음
 //key.js 가져오기
 const config = require('./config/key');
 console.log(config)
@@ -31,5 +34,36 @@ app.post('/register',(req,res) => {
         return res.status(200).json({ success: true })  //status(200) : 성공했다는 뜻
     })
 })
+
+app.post('/login',(req,res)=>{
+    //요청된 이메일을 DB에 있는지 찾는다.
+    User.findOne({email:req.body.email},(err,user)=>{
+        if(!user){
+            return res.json({
+                loginSucces:false,
+                message:"제공된 이메일에 해당하는 user가 없습니다."
+            })
+        }
+        //요청된 이메일이 DB에 있다면 PWD가 맞는 PWD인지 확인
+        user.comparePassword(req.body.password,(err,isMatch)=>{
+            console.log('err',err)
+            if(!isMatch) //비밀번호가 틀렸을 경우
+            return res.json({loginSuccess: false, message:"비밀번호가 틀렸습니다."})
+
+            //비밀번호가 맞았을 경우. 토큰 생성
+            user.generateToken((err,user)=>{
+                if(err) return res.status(400).send(err);
+                
+                //token을 원하는 곳(쿠키, 로컬스토리지 등. 여기서는 쿠키에 저장)에 저장한다. 
+                res.cookie("x_auth",user.token)
+                .status(200)
+                .json({loginSuccess:true,userId:user._id})
+            })
+        })
+    })
+
+
+})
+
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
