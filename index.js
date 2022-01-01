@@ -13,6 +13,8 @@ app.use(bodyParser.json()); //application/json
 app.use(cookieParser()); //cookieparser 사용할 수 있음
 //key.js 가져오기
 const config = require('./config/key');
+//
+const {auth} = require('./middleware/auth');
 console.log(config)
 //mongoose를 이용하여 어플리케이션과 mongo db 연결
 const mongoose = require('mongoose')
@@ -24,7 +26,7 @@ mongoose.connect(config.mongoURI,{
 app.get('/',(req,res)=> res.send('Hello Hyojeong! nodemon 변경'))
 
 //회원가입을 위한 route만들기
-app.post('/register',(req,res) => {
+app.post('/api/users/register',(req,res) => {
     //Client에서 보내주는 정보들을 DB에 넣어주기
 
 
@@ -65,5 +67,20 @@ app.post('/login',(req,res)=>{
 
 })
 
+
+app.get('/api/users/auth',auth,(req,res)=>{
+    //여기까지 middelware를 통과했다는 얘기는 authentication이 true 라는 말
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0? false : true, //0이면 일반 user, 0이 아니면 advisor
+        isAuth : true,
+        email: req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image: req.user.image
+
+    })
+})
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
