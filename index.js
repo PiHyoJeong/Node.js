@@ -27,44 +27,39 @@ app.get('/',(req,res)=> res.send('Hello Hyojeong! nodemon 변경'))
 //회원가입을 위한 route만들기
 app.post('/api/users/register',(req,res) => {
     //Client에서 보내주는 정보들을 DB에 넣어주기
-
-
     const user = new User(req.body) //instance만들기 //req.body 안에는 bodyParser 덕분에 json 형식으로 data가 있다.
     user.save((err,userInfo)=>{
         if(err) return res.json({ success: false, err}) //성공하지 못했을 때 성공하지 못했다고 json 형식으로 전달되고 err message도 함께 전달한다.
         return res.status(200).json({ success: true })  //status(200) : 성공했다는 뜻
     })
 })
+app.post('/login',(req,res)=>{
+    //요청된 이메일을 DB에 있는지 찾는다.
+    User.findOne({email:req.body.email},(err,user)=>{
+        if(!user){
+            return res.json({
+                loginSucces:false,
+                message:"제공된 이메일에 해당하는 user가 없습니다."
+            })
+        }
+        //요청된 이메일이 DB에 있다면 PWD가 맞는 PWD인지 확인
+        user.comparePassword(req.body.password,(err,isMatch)=>{ //isMatch : db에 있는 pwd와 입력한 pwd가 일치
+            console.log('err',err)
+            if(!isMatch) //비밀번호가 틀렸을 경우
+            return res.json({loginSuccess: false, message:"비밀번호가 틀렸습니다."})
 
- app.post('/login',(req,res)=>{
-     //요청된 이메일을 DB에 있는지 찾는다.
-     User.findOne({email:req.body.email},(err,user)=>{
-         if(!user){
-             return res.json({
-                 loginSucces:false,
-                 message:"제공된 이메일에 해당하는 user가 없습니다."
-             })
-         }
-         //요청된 이메일이 DB에 있다면 PWD가 맞는 PWD인지 확인
-         user.comparePassword(req.body.password,(err,isMatch)=>{ //isMatch : db에 있는 pwd와 입력한 pwd가 일치
-             console.log('err',err)
-             if(!isMatch) //비밀번호가 틀렸을 경우
-             return res.json({loginSuccess: false, message:"비밀번호가 틀렸습니다."})
-
-             //비밀번호가 맞았을 경우. 토큰 생성
-             user.generateToken((err,user)=>{
-                 if(err) return res.status(400).send(err); //err가 있을 때 clinet에 err전달
+            //비밀번호가 맞았을 경우. 토큰 생성
+            user.generateToken((err,user)=>{
+                if(err) return res.status(400).send(err); //err가 있을 때 clinet에 err전달
                 
-                 //token을 원하는 곳(쿠키, 로컬스토리지 등. 여기서는 쿠키에 저장)에 저장한다. 
-                 res.cookie("x_auth",user.token) //cookie Name에 x_auth 설정. cookie 내용에 user.token 설정.
-                 .status(200)
-                 .json({loginSuccess:true,userId:user._id})
-             })
-         })
-     })
-
-
- })
+                //token을 원하는 곳(쿠키, 로컬스토리지 등. 여기서는 쿠키에 저장)에 저장한다. 
+                res.cookie("x_auth",user.token) //cookie Name에 x_auth 설정. cookie 내용에 user.token 설정.
+                    .status(200)
+                    .json({loginSuccess:true,userId:user._id})
+            })
+        })
+    })
+})
 
  
  let auth = (req,res,next)=>{
